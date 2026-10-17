@@ -10,33 +10,33 @@ type: DCM_PROJECT
 # Target names must match the GitHub Environment names exactly, because the
 # GitHub OIDC token's subject is "repo:<owner>/<repo>:environment:<target>".
 #
-# ONE EDIT REQUIRED: replace YOURORG-YOURACCOUNT below (all four targets) with
-# the value returned by the last query in setup/01_admin_setup.sql.
+# ONE EDIT REQUIRED: replace VMEBXEW-THC76771 below (all four targets) with
+# setup/01_admin_setup.sql (all four targets use the same account).
 # -----------------------------------------------------------------------------
 
 default_target: DCM_DEV
 
 targets:
   DCM_DEV:
-    account_identifier: YOURORG-YOURACCOUNT
+    account_identifier: VMEBXEW-THC76771
     project_name: DCM_ADMIN.PROJECTS.EDP_POC_DEV
     project_owner: DCM_DEPLOYER_DEV
     templating_config: DEV
 
   DCM_QA:
-    account_identifier: YOURORG-YOURACCOUNT
+    account_identifier: VMEBXEW-THC76771
     project_name: DCM_ADMIN.PROJECTS.EDP_POC_QA
     project_owner: DCM_DEPLOYER_QA
     templating_config: QA
 
   DCM_PREPROD:
-    account_identifier: YOURORG-YOURACCOUNT
+    account_identifier: VMEBXEW-THC76771
     project_name: DCM_ADMIN.PROJECTS.EDP_POC_PREPROD
     project_owner: DCM_DEPLOYER_PREPROD
     templating_config: PREPROD
 
   DCM_PROD:
-    account_identifier: YOURORG-YOURACCOUNT
+    account_identifier: VMEBXEW-THC76771
     project_name: DCM_ADMIN.PROJECTS.EDP_POC_PROD
     project_owner: DCM_DEPLOYER_PROD
     templating_config: PROD
