@@ -54,6 +54,7 @@ templating:
     data_retention_days: 1
     acs_year: 2023                   # ACS 5-year vintage the scheduled task loads
     census_state_fips: "25"          # 25 = Massachusetts
+    expected_counties: 14            # data-quality check: Massachusetts has 14 counties
     census_eai: "CENSUS_API_ACCESS"  # external access integration created in setup/01_admin_setup.sql
     census_secret: "DCM_ADMIN.INTEGRATIONS.CENSUS_API_KEY"  # API key secret, same setup script
     enable_census_api: true          # set false if you skip the external access setup

@@ -78,6 +78,22 @@ jobs:
           snow sql -x -q "CALL ${DB}_LANDING.EDP_ACS.SP_LOAD_ACS_FROM_API(${ACS_YEAR})"
           snow sql -x -q "CALL ${DB}_CURATED.EDP_ACS.SP_TRANSFORM_ACS()"
 
+      - name: Data-quality checks (Python procedure)
+        env:
+          ACS_YEAR: ${{ inputs.acs_year }}
+        run: |
+          OUT=$(snow sql -x --format json -q "CALL ${DB}_CURATED.EDP_ACS.SP_CHECK_ACS_QUALITY(${ACS_YEAR})")
+          echo "$OUT"
+          SUMMARY=$(python3 -c 'import json,sys; d=json.load(sys.stdin); d=d[0] if isinstance(d,list) else d; d=d[0] if isinstance(d,list) else d; print(list(d.values())[0])' <<< "$OUT")
+          echo "Summary: $SUMMARY"
+          snow sql -x -q "SELECT CHECK_NAME, EXPECTED, ACTUAL, PASSED FROM ${DB}_CURATED.EDP_ACS.ACS_DQ_RESULTS WHERE RUN_ID = '$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["run_id"])' "$SUMMARY")' ORDER BY CHECK_NAME"
+          FAILED=$(python3 -c 'import json,sys; print(",".join(json.loads(sys.argv[1])["failed"]))' "$SUMMARY")
+          if [ -n "$FAILED" ]; then
+            echo "::error::Data-quality checks failed: $FAILED"
+            exit 1
+          fi
+          echo "All data-quality checks passed"
+
       - name: Show result
         run: |
           snow sql -x -q "SELECT COUNTY_NAME, REGION, ACS_YEAR, TOTAL_POPULATION, MEDIAN_HH_INCOME, INCOME_BAND FROM ${DB}_DATAMART.EDP_ACS.V_COUNTY_PROFILE ORDER BY TOTAL_POPULATION DESC"

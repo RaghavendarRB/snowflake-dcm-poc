@@ -50,6 +50,7 @@ dcm/
     00_infrastructure.sql         warehouse, LANDING / CURATED / DATAMART databases, schemas
     10_landing_acs.sql            raw table, file format, stage, Python Census API procedure
     20_curated_acs.sql            curated tables, SQL MERGE transform procedure
+    25_curated_acs_quality.sql    data-quality results table + Python check procedure
     30_datamart_acs.sql           consumer view
     40_tasks.sql                  monthly task graph (load -> transform), deployed suspended
     90_access.sql                 reader role + grants
@@ -60,7 +61,7 @@ dcm/
   1-plan-on-pr.yml                PR: plan all environments, comment on the PR
   2-promote-on-merge.yml          merge to main: DEV -> QA -> PREPROD -> PROD
   3-deploy-one-env.yml            manual: deploy one environment (drift fix, rollback, drops)
-  4-run-acs-load.yml              manual: run the Census load + transform in one environment
+  4-run-acs-load.yml              manual: Census load + transform + quality checks in one environment
   _dcm-deploy.yml                 reusable plan + deploy job used by 2) and 3)
 setup/
   01_admin_setup.sql              one-time Snowflake admin setup
@@ -77,6 +78,7 @@ Objects created per environment (`<ENV>` = DEV, QA, PREPROD, PROD):
 | Databases | `POC_<ENV>_LANDING`, `POC_<ENV>_CURATED`, `POC_<ENV>_DATAMART` (schema `EDP_ACS` in each) |
 | Python procedure (Census API) | `POC_<ENV>_LANDING.EDP_ACS.SP_LOAD_ACS_FROM_API(year)` |
 | SQL procedure (transform) | `POC_<ENV>_CURATED.EDP_ACS.SP_TRANSFORM_ACS()` |
+| Python procedure (data quality) | `POC_<ENV>_CURATED.EDP_ACS.SP_CHECK_ACS_QUALITY(year)` |
 | View | `POC_<ENV>_DATAMART.EDP_ACS.V_COUNTY_PROFILE` |
 | Role | `POC_<ENV>_READER` |
 | DCM project | `DCM_ADMIN.PROJECTS.EDP_POC_<ENV>` |
