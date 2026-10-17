@@ -10,7 +10,7 @@ type: DCM_PROJECT
 # Target names must match the GitHub Environment names exactly, because the
 # GitHub OIDC token's subject is "repo:<owner>/<repo>:environment:<target>".
 #
-# ONE EDIT REQUIRED: replace VMEBXEW-THC76771 below (all four targets) with
+# account_identifier below = the value returned by the last query in
 # setup/01_admin_setup.sql (all four targets use the same account).
 # -----------------------------------------------------------------------------
 
