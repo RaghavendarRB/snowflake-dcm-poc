@@ -10,7 +10,9 @@
        No passwords or keys: GitHub's identity token is the credential, and it
        is only accepted from this repo AND the matching GitHub Environment.
 
-  If you rename the repo, update the SUBJECT lines in section 3.
+  SUBJECT must match GitHub's OIDC token exactly. GitHub includes the owner
+  and repo numeric IDs (RaghavendarRB@62756105/snowflake-dcm-poc@1422809623).
+  If you recreate the repo, the repo ID changes: update the SUBJECT lines.
 =============================================================================*/
 
 USE ROLE ACCOUNTADMIN;
@@ -85,7 +87,7 @@ CREATE OR REPLACE USER SVC_GH_DCM_DEV
     WORKLOAD_IDENTITY = (
         TYPE = OIDC
         ISSUER = 'https://token.actions.githubusercontent.com'
-        SUBJECT = 'repo:RaghavendarRB/snowflake-dcm-poc:environment:DCM_DEV'
+        SUBJECT = 'repo:RaghavendarRB@62756105/snowflake-dcm-poc@1422809623:environment:DCM_DEV'
     );
 GRANT ROLE DCM_DEPLOYER_DEV TO USER SVC_GH_DCM_DEV;
 
@@ -112,7 +114,7 @@ CREATE OR REPLACE USER SVC_GH_DCM_QA
     WORKLOAD_IDENTITY = (
         TYPE = OIDC
         ISSUER = 'https://token.actions.githubusercontent.com'
-        SUBJECT = 'repo:RaghavendarRB/snowflake-dcm-poc:environment:DCM_QA'
+        SUBJECT = 'repo:RaghavendarRB@62756105/snowflake-dcm-poc@1422809623:environment:DCM_QA'
     );
 GRANT ROLE DCM_DEPLOYER_QA TO USER SVC_GH_DCM_QA;
 
@@ -139,7 +141,7 @@ CREATE OR REPLACE USER SVC_GH_DCM_PREPROD
     WORKLOAD_IDENTITY = (
         TYPE = OIDC
         ISSUER = 'https://token.actions.githubusercontent.com'
-        SUBJECT = 'repo:RaghavendarRB/snowflake-dcm-poc:environment:DCM_PREPROD'
+        SUBJECT = 'repo:RaghavendarRB@62756105/snowflake-dcm-poc@1422809623:environment:DCM_PREPROD'
     );
 GRANT ROLE DCM_DEPLOYER_PREPROD TO USER SVC_GH_DCM_PREPROD;
 
@@ -166,7 +168,7 @@ CREATE OR REPLACE USER SVC_GH_DCM_PROD
     WORKLOAD_IDENTITY = (
         TYPE = OIDC
         ISSUER = 'https://token.actions.githubusercontent.com'
-        SUBJECT = 'repo:RaghavendarRB/snowflake-dcm-poc:environment:DCM_PROD'
+        SUBJECT = 'repo:RaghavendarRB@62756105/snowflake-dcm-poc@1422809623:environment:DCM_PROD'
     );
 GRANT ROLE DCM_DEPLOYER_PROD TO USER SVC_GH_DCM_PROD;
 
