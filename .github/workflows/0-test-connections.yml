@@ -1,0 +1,45 @@
+# Run once after setup: checks every target in dcm/manifest.yml can log in via
+# OIDC, uses the expected role, and reports whether its DCM project exists yet.
+
+name: "0) Test connections"
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  DCM_PROJECT_PATH: dcm/
+
+jobs:
+  parse-manifest:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.manifest.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: snowflakedb/snowflake-actions/dcm/parse-manifest@v3
+        id: manifest
+        with:
+          project-path: ${{ env.DCM_PROJECT_PATH }}
+
+  connection-test:
+    name: Test ${{ matrix.target }}
+    needs: parse-manifest
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: ${{ fromJson(needs.parse-manifest.outputs.targets) }}
+      fail-fast: false
+    environment: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: snowflakedb/snowflake-actions/dcm/connection-test@v3
+        with:
+          target: ${{ matrix.target }}
+          project-path: ${{ env.DCM_PROJECT_PATH }}
+          snowflake-user: SVC_GH_${{ matrix.target }}

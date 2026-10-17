@@ -1,0 +1,65 @@
+# On merge to main: promote the same code DEV -> QA -> PREPROD -> PROD.
+# Each stage runs PLAN then DEPLOY. PREPROD and PROD wait for approval.
+#
+# Why separate APPROVE_* jobs instead of putting reviewers on DCM_PREPROD /
+# DCM_PROD themselves: the PR workflow also runs in those environments (to plan
+# against them), and reviewers on them would make every PR plan wait for
+# approval. The APPROVE_* environments carry the reviewers; they never touch
+# Snowflake, so they need no OIDC user.
+
+name: "2) Promote on merge"
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "dcm/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+# Never run two promotions at once; queue them instead of cancelling.
+concurrency:
+  group: dcm-promote
+  cancel-in-progress: false
+
+jobs:
+  dev:
+    uses: ./.github/workflows/_dcm-deploy.yml
+    with:
+      target: DCM_DEV
+
+  qa:
+    needs: dev
+    uses: ./.github/workflows/_dcm-deploy.yml
+    with:
+      target: DCM_QA
+
+  approve-preprod:
+    needs: qa
+    runs-on: ubuntu-latest
+    environment: APPROVE_PREPROD
+    steps:
+      - run: echo "PREPROD deployment approved by ${{ github.triggering_actor }}"
+
+  preprod:
+    needs: approve-preprod
+    uses: ./.github/workflows/_dcm-deploy.yml
+    with:
+      target: DCM_PREPROD
+
+  approve-prod:
+    needs: preprod
+    runs-on: ubuntu-latest
+    environment: APPROVE_PROD
+    steps:
+      - run: echo "PROD deployment approved by ${{ github.triggering_actor }}"
+
+  prod:
+    needs: approve-prod
+    uses: ./.github/workflows/_dcm-deploy.yml
+    with:
+      target: DCM_PROD

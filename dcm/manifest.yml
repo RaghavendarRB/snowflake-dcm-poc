@@ -1,0 +1,78 @@
+manifest_version: 2
+
+type: DCM_PROJECT
+
+# -----------------------------------------------------------------------------
+# One DCM project, four deployment targets. All four live in the same Snowflake
+# account; every object name carries the environment (POC_DEV_..., POC_PROD_...)
+# so the environments sit side by side without colliding.
+#
+# Target names must match the GitHub Environment names exactly, because the
+# GitHub OIDC token's subject is "repo:<owner>/<repo>:environment:<target>".
+#
+# ONE EDIT REQUIRED: replace YOURORG-YOURACCOUNT below (all four targets) with
+# the value returned by the last query in setup/01_admin_setup.sql.
+# -----------------------------------------------------------------------------
+
+default_target: DCM_DEV
+
+targets:
+  DCM_DEV:
+    account_identifier: YOURORG-YOURACCOUNT
+    project_name: DCM_ADMIN.PROJECTS.EDP_POC_DEV
+    project_owner: DCM_DEPLOYER_DEV
+    templating_config: DEV
+
+  DCM_QA:
+    account_identifier: YOURORG-YOURACCOUNT
+    project_name: DCM_ADMIN.PROJECTS.EDP_POC_QA
+    project_owner: DCM_DEPLOYER_QA
+    templating_config: QA
+
+  DCM_PREPROD:
+    account_identifier: YOURORG-YOURACCOUNT
+    project_name: DCM_ADMIN.PROJECTS.EDP_POC_PREPROD
+    project_owner: DCM_DEPLOYER_PREPROD
+    templating_config: PREPROD
+
+  DCM_PROD:
+    account_identifier: YOURORG-YOURACCOUNT
+    project_name: DCM_ADMIN.PROJECTS.EDP_POC_PROD
+    project_owner: DCM_DEPLOYER_PROD
+    templating_config: PROD
+
+# -----------------------------------------------------------------------------
+# Templating: these values replace the Jinja vars used in sources/ and
+# post_deploy/. "defaults" apply everywhere; a configuration overrides them for
+# one environment. This replaces the per-environment variables that
+# schemachange gets from config.json.
+# -----------------------------------------------------------------------------
+templating:
+  defaults:
+    db_prefix: "POC"                 # databases: POC_<ENV>_LANDING / _CURATED / _DATAMART
+    wh_size: "X-SMALL"
+    data_retention_days: 1
+    acs_year: 2023                   # ACS 5-year vintage the scheduled task loads
+    census_state_fips: "25"          # 25 = Massachusetts
+    census_eai: "CENSUS_API_ACCESS"  # external access integration created in setup/01_admin_setup.sql
+    census_secret: "DCM_ADMIN.INTEGRATIONS.CENSUS_API_KEY"  # API key secret, same setup script
+    enable_census_api: true          # set false if you skip the external access setup
+    task_state: "SUSPENDED"          # STARTED would schedule the monthly Census pull
+
+  configurations:
+    DEV:
+      env: "DEV"
+      project_owner_role: "DCM_DEPLOYER_DEV"
+
+    QA:
+      env: "QA"
+      project_owner_role: "DCM_DEPLOYER_QA"
+
+    PREPROD:
+      env: "PREPROD"
+      project_owner_role: "DCM_DEPLOYER_PREPROD"
+
+    PROD:
+      env: "PROD"
+      project_owner_role: "DCM_DEPLOYER_PROD"
+      data_retention_days: 7

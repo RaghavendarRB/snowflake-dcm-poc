@@ -1,0 +1,55 @@
+# Reusable workflow: plan + deploy ONE DCM target.
+# Called by "2) Promote on merge" and "3) Deploy one environment".
+# Not triggered directly (the leading underscore is just a naming convention).
+
+name: "_ DCM plan + deploy (reusable)"
+
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: "DCM target from dcm/manifest.yml (also the GitHub Environment name)"
+        required: true
+        type: string
+      allow-drops:
+        description: "Set to 'true' to allow DROPs of databases/schemas/tables/stages"
+        required: false
+        type: string
+        default: "false"
+
+env:
+  DCM_PROJECT_PATH: dcm/
+  # One OIDC service user per environment (see setup/01_admin_setup.sql):
+  # DCM_DEV -> SVC_GH_DCM_DEV, DCM_PROD -> SVC_GH_DCM_PROD, ...
+  SNOWFLAKE_USER: SVC_GH_${{ inputs.target }}
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # Shows exactly what will change (CREATE / ALTER / DROP) in the job
+      # summary and as a comment on the PR that was merged.
+      - name: DCM plan
+        uses: snowflakedb/snowflake-actions/dcm/plan@v3
+        with:
+          target: ${{ inputs.target }}
+          project-path: ${{ env.DCM_PROJECT_PATH }}
+          snowflake-user: ${{ env.SNOWFLAKE_USER }}
+          comment-on-pr: "true"
+
+      # Applies the plan. Blocks the deploy if the plan would DROP a database,
+      # schema, table or stage, unless allow-drops is "true".
+      # Then runs dcm/post_deploy/*.sql (idempotent seed data).
+      - name: DCM deploy
+        uses: snowflakedb/snowflake-actions/dcm/deploy@v3
+        with:
+          target: ${{ inputs.target }}
+          project-path: ${{ env.DCM_PROJECT_PATH }}
+          snowflake-user: ${{ env.SNOWFLAKE_USER }}
+          allow-drops: ${{ inputs.allow-drops }}
+          post-scripts-path: "post_deploy"
+          comment-on-pr: "true"

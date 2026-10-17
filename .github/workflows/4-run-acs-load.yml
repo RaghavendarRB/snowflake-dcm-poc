@@ -1,0 +1,83 @@
+# Manual: run the ACS pipeline in one environment (CALL the procedures).
+#
+# DCM deploys object definitions; it does not run them. Executing a pipeline
+# (the CALLs) is an operational step, done here, by the scheduled task
+# (40_tasks.sql), or by a post-deploy script.
+
+name: "4) Run ACS load"
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Environment to run in"
+        required: true
+        type: choice
+        options: [DCM_DEV, DCM_QA, DCM_PREPROD, DCM_PROD]
+      acs_year:
+        description: "ACS 5-year vintage to load (e.g. 2023)"
+        required: true
+        type: string
+        default: "2023"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  approve:
+    if: inputs.target == 'DCM_PREPROD' || inputs.target == 'DCM_PROD'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target == 'DCM_PROD' && 'APPROVE_PROD' || 'APPROVE_PREPROD' }}
+    steps:
+      - run: echo "${{ inputs.target }} run approved"
+
+  run:
+    name: Load ACS ${{ inputs.acs_year }} in ${{ inputs.target }}
+    needs: approve
+    if: ${{ !failure() && !cancelled() }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Validate inputs
+        env:
+          ACS_YEAR: ${{ inputs.acs_year }}
+        run: |
+          if ! [[ "$ACS_YEAR" =~ ^20[0-9]{2}$ ]]; then
+            echo "::error::acs_year must be a 4-digit year like 2023 (got '$ACS_YEAR')"
+            exit 1
+          fi
+
+      - name: Read connection details from manifest
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          M=dcm/manifest.yml
+          CONFIG=$(yq ".targets.${TARGET}.templating_config" "$M")
+          ENV_NAME=$(yq ".templating.configurations.${CONFIG}.env" "$M")
+          PREFIX=$(yq ".templating.defaults.db_prefix" "$M")
+          {
+            echo "SNOWFLAKE_ACCOUNT=$(yq ".targets.${TARGET}.account_identifier" "$M")"
+            echo "SNOWFLAKE_ROLE=$(yq ".targets.${TARGET}.project_owner" "$M")"
+            echo "SNOWFLAKE_USER=SVC_GH_${TARGET}"
+            echo "SNOWFLAKE_WAREHOUSE=${PREFIX}_${ENV_NAME}_WH"
+            echo "DB=${PREFIX}_${ENV_NAME}"
+          } >> "$GITHUB_ENV"
+
+      - name: Set up Snowflake CLI (OIDC)
+        uses: snowflakedb/snowflake-actions@v3
+        with:
+          use-oidc: true
+
+      - name: Load from Census API, then transform
+        env:
+          ACS_YEAR: ${{ inputs.acs_year }}
+        run: |
+          snow sql -x -q "CALL ${DB}_LANDING.EDP_ACS.SP_LOAD_ACS_FROM_API(${ACS_YEAR})"
+          snow sql -x -q "CALL ${DB}_CURATED.EDP_ACS.SP_TRANSFORM_ACS()"
+
+      - name: Show result
+        run: |
+          snow sql -x -q "SELECT COUNTY_NAME, REGION, ACS_YEAR, TOTAL_POPULATION, MEDIAN_HH_INCOME, INCOME_BAND FROM ${DB}_DATAMART.EDP_ACS.V_COUNTY_PROFILE ORDER BY TOTAL_POPULATION DESC"

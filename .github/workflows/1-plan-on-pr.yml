@@ -1,0 +1,60 @@
+# On every PR that touches dcm/: run DCM PLAN against all four environments
+# and post each plan as a PR comment. Nothing is deployed.
+#
+# This is the review step: reviewers see exactly what will be created, altered
+# or dropped in each environment, including drift (an environment that no
+# longer matches the code because someone changed it by hand).
+
+name: "1) Plan on PR"
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: ["main"]
+    paths:
+      - "dcm/**"
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: dcm-plan-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DCM_PROJECT_PATH: dcm/
+
+jobs:
+  parse-manifest:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.manifest.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: snowflakedb/snowflake-actions/dcm/parse-manifest@v3
+        id: manifest
+        with:
+          project-path: ${{ env.DCM_PROJECT_PATH }}
+
+  plan:
+    name: Plan ${{ matrix.target }}
+    needs: parse-manifest
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: ${{ fromJson(needs.parse-manifest.outputs.targets) }}
+      fail-fast: false
+    environment: ${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: snowflakedb/snowflake-actions/dcm/plan@v3
+        with:
+          target: ${{ matrix.target }}
+          project-path: ${{ env.DCM_PROJECT_PATH }}
+          snowflake-user: SVC_GH_${{ matrix.target }}
+          comment-on-pr: "true"

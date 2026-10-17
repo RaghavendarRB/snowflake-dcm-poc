@@ -1,0 +1,49 @@
+# Manual: plan + deploy a single environment from any branch or tag.
+#
+# Uses:
+#  - Re-sync an environment after someone changed it by hand (drift).
+#  - Roll back: pick an older tag in "Use workflow from" and deploy it.
+#    (The normal rollback is a git revert PR, which flows through 1) and 2).)
+#  - Deliberate DROPs: tick allow_drops after reviewing the plan.
+
+name: "3) Deploy one environment"
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Environment to deploy"
+        required: true
+        type: choice
+        options: [DCM_DEV, DCM_QA, DCM_PREPROD, DCM_PROD]
+      allow_drops:
+        description: "Allow DROP of databases/schemas/tables/stages (review the plan first)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: dcm-deploy-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  approve:
+    if: inputs.target == 'DCM_PREPROD' || inputs.target == 'DCM_PROD'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target == 'DCM_PROD' && 'APPROVE_PROD' || 'APPROVE_PREPROD' }}
+    steps:
+      - run: echo "${{ inputs.target }} deployment approved"
+
+  deploy:
+    needs: approve
+    # Runs when approval passed, or was skipped (DEV / QA).
+    if: ${{ !failure() && !cancelled() }}
+    uses: ./.github/workflows/_dcm-deploy.yml
+    with:
+      target: ${{ inputs.target }}
+      allow-drops: ${{ inputs.allow_drops && 'true' || 'false' }}

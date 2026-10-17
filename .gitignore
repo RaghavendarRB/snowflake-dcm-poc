@@ -1,0 +1,15 @@
+# Snowflake CLI plan/deploy output
+out/
+dcm/out/
+
+# Local credentials, never commit
+*.p8
+*.pem
+.env
+connections.toml
+config.toml
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
