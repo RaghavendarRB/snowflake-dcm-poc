@@ -75,4 +75,4 @@ templating:
     PROD:
       env: "PROD"
       project_owner_role: "DCM_DEPLOYER_PROD"
-      data_retention_days: 7
+      data_retention_days: 1        # Standard edition max is 1; on Enterprise, raise PROD to e.g. 7
