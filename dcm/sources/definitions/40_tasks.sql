@@ -19,8 +19,8 @@ as
 
 define task {{db}}_LANDING.EDP_ACS.TASK_TRANSFORM_ACS
     warehouse = '{{db}}_WH'
-    after {{db}}_LANDING.EDP_ACS.TASK_LOAD_ACS
     comment = 'Runs after the load: MERGE landing into curated'
+    after {{db}}_LANDING.EDP_ACS.TASK_LOAD_ACS
     {{task_state}}
 as
     call {{db}}_CURATED.EDP_ACS.SP_TRANSFORM_ACS();
