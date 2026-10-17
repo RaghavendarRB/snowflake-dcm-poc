@@ -159,7 +159,8 @@ See [`docs/demo-script.md`](docs/demo-script.md) for the full walkthrough.
   Python and SQL procedure bodies are compiled at run time, so test them by
   running them (workflow 4) in DEV/QA.
 - **External access integrations are not yet a DEFINE type**, so the
-  integration for the Census API is created once in `setup/01_admin_setup.sql`.
+  integration and API-key secret for the Census API are created once in
+  `setup/01_admin_setup.sql`.
   The Python procedure that uses it *is* managed by DCM.
 - **Some table changes aren't in-place alters**: incompatible column type
   changes and column reordering aren't supported. Those still need a planned
